@@ -119,6 +119,23 @@ io.on("connection", (socket) => {
     }
   });
 
+  // -------------------------------------------------------------------------------------
+
+  // countVolatileEvent
+
+  // Volatile events are a special type of event in Socket.IO designed for scenarios where it's acceptable for messages to be lost if the connection isn't ready.
+  // They operate similarly to the UDP protocol in networking, which prioritizes speed over reliability. This means:
+
+  // No Buffering: If the client isn't ready to receive a volatile event (e.g., due to a temporary network issue), the event won't be queued or retried. It's simply discarded.
+
+  // Latest Data Priority: In situations where only the most recent data is relevant (like real-time position updates in a game),
+  // volatile events ensure that outdated information doesn't clutter the network or the client.
+
+  let countVolatileEvent: number = 0;
+  setInterval(() => {
+    socket.volatile.emit("ping", ++countVolatileEvent);
+  }, 1000);
+
   // disconnect
 
   socket.on("disconnect", function () {
