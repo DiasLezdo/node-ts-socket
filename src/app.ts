@@ -42,11 +42,11 @@ io.engine.on("initial_headers", (headers, req) => {
 io.on("connection", (socket) => {
   console.log("user connected");
 
-  const count = io.engine.clientsCount;
-  const count2 = io.of("/").sockets.size;
+  // const count = io.engine.clientsCount;
+  // const count2 = io.of("/").sockets.size;
 
-  console.log("count", count);
-  console.log("count2", count2);
+  // console.log("count", count);
+  // console.log("count2", count2);
 
   // emit event
 
@@ -131,11 +131,67 @@ io.on("connection", (socket) => {
   // Latest Data Priority: In situations where only the most recent data is relevant (like real-time position updates in a game),
   // volatile events ensure that outdated information doesn't clutter the network or the client.
 
-  let countVolatileEvent: number = 0;
-  setInterval(() => {
-    socket.volatile.emit("ping", ++countVolatileEvent);
-  }, 1000);
+  // let countVolatileEvent: number = 0;
+  // setInterval(() => {
+  //   socket.volatile.emit("ping", ++countVolatileEvent);
+  // }, 1000);
 
+  // ----------------------------------------------------------------
+
+  // ONCE
+
+  // Initialization: You might want to perform some initialization tasks once you receive certain data from the server.
+
+  // Authentication: Waiting for a single authentication response before proceeding.
+
+  // Single Updates: Listening for a one-time update or notification.
+
+  // Emit 'once-method' event to the client
+
+  socket.emit("once-method");
+
+  // Listen for 'details_once' event only once
+  socket.once("details_once", ({ userId, userName }) => {
+    console.log(`User ID: ${userId}, User Name: ${userName}`);
+  });
+
+  // -------------------------------------------------------------------------------------
+
+  // Socket Off
+
+  socket.on("btn-on", (response, cb) => {
+    console.log(response);
+    cb(null, { status: "ok", message: "button clicked" });
+  });
+
+  // ----------------------------------------------------
+
+  // PREPEND
+
+  // socket.prependAny(listener) is designed to add a universal listener that gets triggered whenever any event is emitted on the socket.
+
+  // This listener is prepended to the beginning of the listeners array, ensuring it runs before any other event-specific listeners.
+
+  socket.prependAny((eventName, ...args) => {
+    console.log(`Received event: '${eventName}' with data:`, args);
+    // You can add global logic here, e.g., authentication, logging, etc.
+  });
+
+  // --------------------------------------------------------
+
+  // broadcast
+
+  socket.on("broad_cast_trigger", (response: any, cb) => {
+    console.log(response);
+    cb(null, { status: "ok", message: "button clicked" });
+
+    socket.broadcast.emit("documentUpdated", {
+      hh: "bordcaset",
+      message: "hi tailiz",
+    });
+  });
+
+  // ------------------------------------------------
   // disconnect
 
   socket.on("disconnect", function () {
