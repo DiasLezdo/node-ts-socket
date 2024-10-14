@@ -192,6 +192,100 @@ io.on("connection", (socket) => {
   });
 
   // ------------------------------------------------
+
+  // ROOMs
+
+  //Absolutely! Rooms in Socket.IO are a powerful feature that allows you to group sockets into arbitrary channels. This facilitates targeted communication by enabling the server to broadcast events to a specific subset of connected clients rather than broadcasting to all clients indiscriminately.
+
+  // What Are Rooms in Socket.IO?
+  // A room is simply a named channel that sockets can join and leave. Rooms are server-side only and are used to manage groups of sockets for more organized and efficient event broadcasting.
+
+  // Arbitrary Grouping: Rooms can be created dynamically and are not restricted to any predefined list. This flexibility allows for various use cases, such as chat rooms, game lobbies, or project-specific updates.
+  // No Explicit Creation: Rooms are created implicitly when a socket joins them and are deleted automatically when all sockets leave.
+
+  // Why Use Rooms?
+  // Using rooms allows you to:-
+
+  // Targeted Broadcasting: Send events to specific groups of clients without affecting others.
+  // Organized Communication: Manage different channels of communication within your application seamlessly.
+  // Scalability: Efficiently handle large numbers of clients by segmenting them into manageable groups.
+
+  // Basic Operations with Rooms:-
+
+  // Joining a Room:
+  // A socket can join a room using the join method.
+
+  // Leaving a Room:
+  // A socket can leave a room using the leave method.
+
+  // Broadcasting to a Room:
+  // Emit events to all sockets within a specific room.
+
+  // Listing Rooms:
+  // Retrieve information about existing rooms and the sockets within them.
+
+  // Listen for a joinRoom event from the client
+  socket.on("joinRoom", (roomName) => {
+    socket.join(roomName);
+    console.log(`Socket ${socket.id} joined room ${roomName}`);
+
+    // Optionally, notify others in the room
+    socket
+      .to(roomName)
+      .emit("notification", `User ${socket.id} has joined the room.`);
+  });
+
+  socket.on("leaveRoom", (roomName) => {
+    socket.leave(roomName);
+    console.log(`Socket ${socket.id} left room ${roomName}`);
+
+    // Optionally, notify others in the room
+    socket
+      .to(roomName)
+      .emit("notification", `User ${socket.id} has left the room.`);
+  });
+
+  socket.on("room_message", ({ roomName, message }) => {
+    // Broadcast the message to all sockets in the specified room
+    io.to(roomName).emit("recieve_room_message", {
+      sender: socket.id,
+      message: message,
+    });
+  });
+
+  // list rooms
+
+  type RoomInfo = {
+    room: string;
+    size: number;
+  };
+
+  socket.on("getRooms", () => {
+    const rooms = io.sockets.adapter.rooms;
+    const roomsInfo: RoomInfo[] = [];
+
+    rooms.forEach((sockets, room) => {
+      // Exclude rooms that are individual socket IDs
+      if (!sockets.has(room)) {
+        roomsInfo.push({ room, size: sockets.size });
+      }
+    });
+
+    socket.emit("roomsList", roomsInfo);
+  });
+
+  // Endpoint to get sockets in a specific room
+  socket.on("getSocketsInRoom", (roomName) => {
+    const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+
+    if (socketsInRoom) {
+      socket.emit("socketsInRoom", Array.from(socketsInRoom));
+    } else {
+      socket.emit("socketsInRoom", []);
+    }
+  });
+
+  // ---------------------------------------------------
   // disconnect
 
   socket.on("disconnect", function () {
