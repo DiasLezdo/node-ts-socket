@@ -356,6 +356,22 @@ chatNamespace.on("connection", (socket) => {
     chatNamespace.to(room).emit("chatMessage", msgData);
   });
 
+  socket.emit(
+    "welcome",
+    { message: socket.user?.meg },
+    (err: Error, response: any) => {
+      // Removed TypeScript annotations
+      if (err) {
+        console.log("err", err);
+      } else {
+        console.log("response", response);
+        console.log("status", response.status); // Access 'status' directly
+      }
+      // Disconnect after handling the response
+      // socket.disconnect(); //if want
+    }
+  );
+
   socket.on("disconnect", () => {
     console.log(`User disconnected from '/chat' namespace: ${socket.id}`);
     // Optionally, notify rooms about the disconnection
