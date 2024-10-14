@@ -18,7 +18,7 @@ app.use(
 const port = 5000;
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   /* options */
   cors: {
     origin: "http://localhost:5173",
@@ -36,7 +36,7 @@ app.get("/", (req, res) => {
 io.engine.on("initial_headers", (headers, req) => {
   headers["hhhhh"] = "123";
   headers["set-cookie"] = "mycookie=456";
-  console.log("headers", headers);
+  // console.log("headers", headers);
 });
 
 io.on("connection", (socket) => {
@@ -290,6 +290,75 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", function () {
     console.log("user disconnected");
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
+
+// NAMESPACE
+
+// Define the structure of the user object
+interface User {
+  id: string;
+  meg: string;
+  // Add other user properties as needed
+}
+
+declare module "socket.io" {
+  interface Socket {
+    user?: User;
+  }
+}
+
+// Chat Namespace '/chat'
+const chatNamespace = io.of("/chat");
+
+io.of("/chat").use((socket, next) => {
+  console.log(`User ${socket.id} attempting to connect to /chat`);
+  socket.user = { id: socket.id, meg: "middleware value da" };
+  next();
+});
+
+chatNamespace.on("connection", (socket) => {
+  console.log(
+    `User connected to '/chat' namespace: ${socket.id} and message: ${socket.user?.meg}`
+  );
+
+  // Join a chat room
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+    chatNamespace
+      .to(room)
+      .emit(
+        "notification",
+        `User ${socket.id} and message: ${socket.user?.meg} has joined room ${room}.`
+      );
+  });
+
+  // Leave a chat room
+  socket.on("leaveRoom", (room) => {
+    socket.leave(room);
+    chatNamespace
+      .to(room)
+      .emit(
+        "notification",
+        `User ${socket.id} and message: ${socket.user?.meg} has left room ${room}.`
+      );
+  });
+
+  // Handle chat messages
+  socket.on("chatMessage", ({ room, message }) => {
+    const msgData = {
+      sender: socket.id,
+      message,
+      timestamp: new Date(),
+    };
+    chatNamespace.to(room).emit("chatMessage", msgData);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`User disconnected from '/chat' namespace: ${socket.id}`);
+    // Optionally, notify rooms about the disconnection
   });
 });
 
